@@ -53,13 +53,6 @@ inline void d3dSetDebugName(ID3D12DeviceChild* obj, const char* name)
     }
 }
 
-inline std::wstring AnsiToWString(const std::string& str)
-{
-    WCHAR buffer[512];
-    MultiByteToWideChar(CP_ACP, 0, str.c_str(), -1, buffer, 512);
-    return std::wstring(buffer);
-}
-
 /*
 #if defined(_DEBUG)
     #ifndef Assert
@@ -278,8 +271,7 @@ struct Texture
 #define ThrowIfFailed(x)                                              \
 {                                                                     \
     HRESULT hr__ = (x);                                               \
-    std::wstring wfn = AnsiToWString(__FILE__);                       \
-    if(FAILED(hr__)) { throw DxException(hr__, L#x, wfn, __LINE__); } \
+    if(FAILED(hr__)) { throw DxException(hr__, L#x, __FILEW__, __LINE__); } \
 }
 #endif
 
