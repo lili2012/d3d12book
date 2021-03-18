@@ -78,7 +78,10 @@ private:
 	virtual void CreateRtvAndDsvDescriptorHeaps()override;
     virtual void OnResize()override;
     virtual void Update(const GameTimer& gt)override;
-    virtual void Draw(const GameTimer& gt)override;
+
+		void GetAvailableFrameResource();
+
+		virtual void Draw(const GameTimer& gt)override;
 
     virtual void OnMouseDown(WPARAM btnState, int x, int y)override;
     virtual void OnMouseUp(WPARAM btnState, int x, int y)override;
@@ -270,24 +273,27 @@ void DynamicCubeMapApp::Update(const GameTimer& gt)
 	XMStoreFloat4x4(&mSkullRitem->World, skullScale*skullLocalRotate*skullOffset*skullGlobalRotate);
 	mSkullRitem->NumFramesDirty = gNumFrameResources;
 
-    // Cycle through the circular frame resource array.
-    mCurrFrameResourceIndex = (mCurrFrameResourceIndex + 1) % gNumFrameResources;
-    mCurrFrameResource = mFrameResources[mCurrFrameResourceIndex].get();
-
-    // Has the GPU finished processing the commands of the current frame resource?
-    // If not, wait until the GPU has completed commands up to this fence point.
-    if(mCurrFrameResource->Fence != 0 && mFence->GetCompletedValue() < mCurrFrameResource->Fence)
-    {
-        HANDLE eventHandle = CreateEventEx(nullptr, false, false, EVENT_ALL_ACCESS);
-        ThrowIfFailed(mFence->SetEventOnCompletion(mCurrFrameResource->Fence, eventHandle));
-        WaitForSingleObject(eventHandle, INFINITE);
-        CloseHandle(eventHandle);
-    }
-
 	AnimateMaterials(gt);
 	UpdateObjectCBs(gt);
 	UpdateMaterialBuffer(gt);
 	UpdateMainPassCB(gt);
+}
+
+void DynamicCubeMapApp::GetAvailableFrameResource()
+{
+  // Cycle through the circular frame resource array.
+  mCurrFrameResourceIndex = (mCurrFrameResourceIndex + 1) % gNumFrameResources;
+  mCurrFrameResource = mFrameResources[mCurrFrameResourceIndex].get();
+
+  // Has the GPU finished processing the commands of the current frame resource?
+  // If not, wait until the GPU has completed commands up to this fence point.
+  if (mCurrFrameResource->Fence != 0 && mFence->GetCompletedValue() < mCurrFrameResource->Fence)
+  {
+    HANDLE eventHandle = CreateEventEx(nullptr, false, false, EVENT_ALL_ACCESS);
+    ThrowIfFailed(mFence->SetEventOnCompletion(mCurrFrameResource->Fence, eventHandle));
+    WaitForSingleObject(eventHandle, INFINITE);
+    CloseHandle(eventHandle);
+  }
 }
 
 void DynamicCubeMapApp::Draw(const GameTimer& gt)
